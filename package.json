@@ -2,6 +2,28 @@
   "name": "figma-plugin-boilerplate",
   "private": true,
   "version": "0.1.0",
+  "description": "A modern Figma plugin starter — Vite 7 + React 19 + TypeScript, typed UI ↔ sandbox messaging, Manifest v3 with dynamic-page, auto-themed UI. Ships with Claude Code skills for AI-assisted plugin development.",
+  "keywords": [
+    "figma",
+    "figma-plugin",
+    "boilerplate",
+    "starter",
+    "template",
+    "vite",
+    "react",
+    "typescript",
+    "claude-code"
+  ],
+  "author": "Arnaud Ostrowski",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/katsele/figma-plugin-react-boilerplate.git"
+  },
+  "homepage": "https://github.com/katsele/figma-plugin-react-boilerplate#readme",
+  "bugs": {
+    "url": "https://github.com/katsele/figma-plugin-react-boilerplate/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"
