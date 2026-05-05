@@ -1,0 +1,210 @@
+/*
+ * Figma exposes its theme via CSS custom properties when the plugin is opened
+ * with `themeColors: true` in figma.showUI(). The variables below track the
+ * user's current Figma theme (light / dark / dim) automatically — no manual
+ * theme switching needed.
+ */
+
+:root {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--figma-color-text);
+  background: var(--figma-color-bg);
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; }
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  min-height: 100vh;
+}
+
+.title { display: flex; flex-direction: column; gap: 4px; }
+
+h1 { font-size: 13px; font-weight: 600; margin: 0; }
+
+.hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--figma-color-text-secondary);
+}
+
+.hint code {
+  background: var(--figma-color-bg-secondary);
+  padding: 0 4px;
+  border-radius: 2px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+}
+
+label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+input[type="text"] {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--figma-color-border);
+  border-radius: 2px;
+  background: var(--figma-color-bg);
+  color: var(--figma-color-text);
+}
+
+input[type="text"]:focus {
+  outline: 1px solid var(--figma-color-border-brand-strong, #18a0fb);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+input[type="checkbox"] { margin: 0; }
+
+details {
+  border: 1px solid var(--figma-color-border);
+  border-radius: 2px;
+  padding: 6px 8px;
+}
+
+details summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--figma-color-text-secondary);
+}
+
+details[open] summary { margin-bottom: 6px; }
+
+details[open] > label + label { margin-top: 6px; }
+
+button {
+  font: inherit;
+  padding: 6px 12px;
+  border: 1px solid var(--figma-color-border);
+  border-radius: 2px;
+  background: var(--figma-color-bg);
+  color: var(--figma-color-text);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--figma-color-bg-hover);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--figma-color-bg-brand);
+  color: var(--figma-color-text-onbrand);
+  border-color: var(--figma-color-bg-brand);
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--figma-color-bg-brand-hover);
+  border-color: var(--figma-color-bg-brand-hover);
+}
+
+.empty {
+  color: var(--figma-color-text-secondary);
+  margin: 0;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.banner {
+  padding: 8px 12px;
+  border-radius: 2px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.banner--error {
+  background: var(--figma-color-bg-danger-secondary, #ffeded);
+  color: var(--figma-color-text-danger, #d72828);
+}
+
+.banner--success {
+  background: var(--figma-color-bg-success-secondary, #e8f9ec);
+  color: var(--figma-color-text-success, #1d7c2c);
+}
+
+.banner button {
+  padding: 2px 6px;
+  background: transparent;
+  border-color: currentColor;
+  color: inherit;
+}
+
+.preview header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+.preview .count { color: var(--figma-color-text-secondary); }
+
+.preview ol {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  background: var(--figma-color-bg-secondary);
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.preview li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+.preview .old,
+.preview .new {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview .old { color: var(--figma-color-text-secondary); }
+
+.preview .arrow { color: var(--figma-color-text-secondary); }
+
+.preview .more {
+  color: var(--figma-color-text-secondary);
+  font-style: italic;
+  justify-content: center;
+}
+
+footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 8px;
+}
