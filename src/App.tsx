@@ -6,6 +6,15 @@ const SELECTION_LIMIT = 500;
 
 // Send a typed message to the plugin sandbox. The `parent.postMessage`
 // envelope shape (`{ pluginMessage }`) is what figma.ui.onmessage unwraps.
+//
+// Target origin is "*" on purpose. Figma's docs recommend pinning this to
+// "https://www.figma.com", but that guidance is scoped to plugins that
+// navigate their iframe to a custom hosted URL. The default
+// `figma.showUI(__html__)` setup this boilerplate uses is a *null-origin*
+// iframe — Figma's own docs and the official figma/plugin-samples repo both
+// use "*" for that case, since the parent frame's real origin (desktop app,
+// staging, embeds) isn't a documented contract to pin against. Revisit only
+// if this UI starts navigating to a custom https:// URL.
 function postToPlugin(msg: UIMessage): void {
   parent.postMessage({ pluginMessage: msg }, "*");
 }
@@ -37,6 +46,13 @@ export function App() {
           setRenaming(false);
           setError(msg.message);
           return;
+        default: {
+          // Exhaustiveness guard. Add a variant to PluginMessage without a
+          // case above and `msg` stops being `never` here, so tsc fails.
+          const unhandled: never = msg;
+          void unhandled;
+          return;
+        }
       }
     }
     window.addEventListener("message", onMessage);
@@ -50,8 +66,14 @@ export function App() {
   const canRename = patternValid && selection.length > 0 && !renaming;
 
   function previewName(node: NodeDigest, index: number): string {
+    // With child layers included, main.ts's collectTargets() numbers {n}
+    // across the flattened selection + descendants — an order this preview
+    // (top-level selection only) can't reproduce. Showing a guessed number
+    // here would misrepresent what Rename actually produces, so fall back
+    // to a placeholder (see the hint rendered under the preview header).
+    const n = includeChildren ? "?" : String(index + 1);
     let next = trimmedPattern
-      .replaceAll("{n}", String(index + 1))
+      .replaceAll("{n}", n)
       .replaceAll("{type}", node.type.toLowerCase())
       .replaceAll("{name}", node.name);
     if (find) next = next.split(find).join(replace);
@@ -155,6 +177,12 @@ export function App() {
               {tooLarge ? " (capped)" : ""}
             </span>
           </header>
+          {includeChildren && trimmedPattern.includes("{n}") && (
+            <p className="hint">
+              {"{n}"} numbers the full set including child layers, so exact
+              values only appear after renaming.
+            </p>
+          )}
           <ol>
             {selection.slice(0, MAX_PREVIEW).map((node, i) => (
               <li key={node.id}>

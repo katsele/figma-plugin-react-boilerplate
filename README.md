@@ -1,5 +1,7 @@
 # Figma Plugin Boilerplate
 
+[![CI](https://github.com/katsele/figma-plugin-react-boilerplate/actions/workflows/ci.yml/badge.svg)](https://github.com/katsele/figma-plugin-react-boilerplate/actions/workflows/ci.yml)
+
 A modern Figma plugin starter. Vite 7 + React 19 + TypeScript, Manifest v3,
 `documentAccess: "dynamic-page"`, single-file UI bundle. The example feature
 is a **Layer Renamer**.
@@ -53,7 +55,7 @@ src/
   App.tsx              Layer Renamer UI (single component)
   ui.css               Uses Figma theme CSS vars (--figma-color-*)
   messages.ts          Discriminated union: typed UI ↔ sandbox contract
-.claude/skills/        Four skills that load when Claude Code opens this repo
+.claude/skills/        Six skills that load when Claude Code opens this repo
 ```
 
 ## Claude skills
@@ -64,6 +66,10 @@ If you use Claude Code, these load automatically from `.claude/skills/`:
 - **figma-plugin-api** — selection, traversal, mutation, undo, events
 - **figma-plugin-perf** — `dynamic-page`, `loadAsync`, batching, bundle size
 - **figma-plugin-security** — `allowedDomains`, sandbox isolation, secrets
+- **figma-plugin-publish** — getting a plugin ID, pre-publish checklist, Community publishing
+- **figma-plugin-devmode** — Dev Mode, codegen, Code Connect, and the other `editorType` surfaces (dev/slides/buzz)
+
+Skills must live at `.claude/skills/<name>/SKILL.md` to auto-load. A bare `skills/` folder at the repo root does not auto-load. `npm run check:skills` enforces this layout.
 
 Read each `SKILL.md` for what it covers.
 

@@ -43,8 +43,9 @@ catch missed cases at compile time.
      return;
    ```
 
-   Add the matching async handler. Wrap mutations in try/finally with
-   `figma.commitUndo()` and post back a typed result.
+   Add the matching async handler. Follow this boilerplate's undo
+   convention (wrap mutations in try/finally and call
+   `figma.commitUndo()`), then post back a typed result.
 
 3. **Send and receive in the UI** (`src/App.tsx`):
 
@@ -112,7 +113,9 @@ case "ui:resize":
 ## Persisting user settings
 
 `figma.clientStorage` is per-user, per-plugin, async, and survives across
-sessions. Use it for preferences (last pattern, last UI size, opened tutorial).
+sessions, capped at 5MB total per plugin (aggregate across all keys). Use it
+for preferences (last pattern, last UI size, opened tutorial). Full method
+set: `getAsync`, `setAsync`, `deleteAsync`, `keysAsync`.
 
 ```ts
 // Sandbox

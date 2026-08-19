@@ -17,9 +17,11 @@ unlocks the rest of this skill's recommendations.
 ## `documentAccess: "dynamic-page"`
 
 In `manifest.json`. With this flag set, Figma does not eagerly load every
-page into the plugin's memory at startup — pages load on demand. This is the
-default for new plugins and dramatically reduces cold-start cost on large
-files.
+page into the plugin's memory at startup — pages load on demand. Figma
+requires this value for all new plugins (deadline was April 2024); it is not
+merely a default. Legacy plugins that omit it aren't forced onto it, but pay
+for it: a full-document load on first run of each session, shown as a
+"Loading n pages for plugin..." spinner (20-30s on large files).
 
 Cost: you must `await page.loadAsync()` before reading the page's
 `children`, `findAll`, or other content properties.
@@ -38,37 +40,45 @@ for (const page of figma.root.children) {
 }
 ```
 
-The async loaders are idempotent — calling on an already-loaded page is a
-no-op.
-
 ## Skip invisible instance children
 
 ```ts
 figma.skipInvisibleInstanceChildren = true;
 ```
 
-Set early in `main.ts`. Hidden children inside component instances are
-typically just visual variants. Skipping them is usually what you want and
-cuts `findAll()` walks by 10–100x on heavy files.
+Set early in `main.ts`. Default is `true` in Figma Dev Mode, `false` in
+Figma and FigJam; don't assume it starts off. Hidden children inside
+component instances are typically just visual variants, so skipping them is
+usually what you want: `findAll`/`findOne` get up to several times faster,
+and `findAllWithCriteria` (the faster API for filtered searches) can get up
+to hundreds of times faster on heavy files.
+
+Cost: with the flag on, invisible nodes inside instances become
+unreachable. `children` and `findAll` exclude them, `getNodeByIdAsync`
+resolves `null` for their ids, and reading a property directly off a
+reference to one throws.
 
 ## Batch reads, batch writes
 
 Each `figma.*` API call crosses a sandbox boundary. Cheap individually,
-expensive in tight loops. Coalesce.
+expensive in tight loops, especially for data you already have in hand.
 
-Bad:
+Bad: `selection` already holds the nodes, but `getNodeByIdAsync` re-fetches
+each one by id.
 
 ```ts
-for (const node of nodes) {
-  if (node.fills.length === 0) node.fills = [BLUE_FILL]; // O(n) reads + writes
+for (const node of figma.currentPage.selection) {
+  const fresh = await figma.getNodeByIdAsync(node.id); // n extra lookups
+  if (fresh && "locked" in fresh && !fresh.locked) fresh.locked = true;
 }
 ```
 
-Better — read once, decide, write once per node:
+Better: use the reference already in hand, zero extra lookups.
 
 ```ts
-const updates = nodes.filter((n) => n.fills.length === 0);
-for (const node of updates) node.fills = [BLUE_FILL];
+for (const node of figma.currentPage.selection) {
+  if ("locked" in node && !node.locked) node.locked = true;
+}
 ```
 
 For very large mutations, group them into a single undo step with
@@ -83,7 +93,8 @@ await figma.clientStorage.setAsync("lastPattern", value);
 ```
 
 Don't block on it from a hot path. Fetch settings once on plugin start, hold
-them in memory, and persist on change.
+them in memory, and persist on change. Quota: 5MB total per plugin,
+aggregated across every key.
 
 ## Don't `console.log` huge node trees
 
@@ -101,7 +112,8 @@ ships in `dist/ui.html`. Figma must parse that HTML on every plugin open.
 
 Defaults the boilerplate enforces:
 
-- React 19 (~50 KB minified+gzipped) — the only UI library
+- React 19 (react + react-dom/client bundle: ~59 KB minified+gzipped) — the
+  only UI library
 - No `react-router` — at 360 × 480, `useState` for screens is enough
 - No `lodash` — five-method use cases are five lines of vanilla JS
 - No CSS framework — Figma exposes theme vars via `themeColors: true`; just
