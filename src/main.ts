@@ -1,4 +1,5 @@
 import type { NodeDigest, PluginMessage, UIMessage } from "./messages";
+import { isUIMessage } from "./messages";
 
 const SELECTION_DIGEST_LIMIT = 500;
 
@@ -97,7 +98,19 @@ async function handleRename(
   }
 }
 
-figma.ui.onmessage = (msg: UIMessage): void => {
+// `msg` is a structured clone crossing the UI → sandbox trust boundary — the
+// runtime shape may not match the `UIMessage` type it's annotated with, and
+// this handler is the one holding figma.* access. Validate before touching
+// it. See the figma-plugin-security skill ("Validate every message at the
+// boundary").
+figma.ui.onmessage = (msg: unknown): void => {
+  if (!isUIMessage(msg)) {
+    postToUI({
+      type: "plugin:error",
+      message: "Received a malformed message from the UI.",
+    });
+    return;
+  }
   switch (msg.type) {
     case "ui:ready":
     case "ui:request-selection":
@@ -109,5 +122,12 @@ figma.ui.onmessage = (msg: UIMessage): void => {
     case "ui:close":
       figma.closePlugin();
       return;
+    default: {
+      // Exhaustiveness guard. Add a variant to UIMessage without a case
+      // above and `msg` stops being `never` here, so tsc fails the build.
+      const unhandled: never = msg;
+      void unhandled;
+      return;
+    }
   }
 };

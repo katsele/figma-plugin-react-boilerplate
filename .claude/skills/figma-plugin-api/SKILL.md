@@ -92,7 +92,9 @@ figma.viewport.scrollAndZoomIntoView([frame]);
 ```
 
 Always `await figma.loadFontAsync(...)` before creating or mutating text.
-Figma's docs are explicit: text without a loaded font throws.
+Figma's docs are explicit: text without a loaded font throws. Setting
+`fontName` only requires loading the new font; setting `characters` requires
+loading every font already used across the node's text ranges first.
 
 ## Fills, strokes, and effects
 
@@ -112,15 +114,34 @@ async getters and apply to nodes via `setBoundVariable`.
 ```ts
 const collections = await figma.variables.getLocalVariableCollectionsAsync();
 const variable = await figma.variables.getVariableByIdAsync(varId);
-if (variable) frame.setBoundVariable("fills", variable);
+if (variable) frame.setBoundVariable("itemSpacing", variable);
 ```
 
-Style methods that take string IDs (`fillStyleId =`, `setFillStyleIdAsync`)
-are deprecated under `dynamic-page` — use the async object-based variants.
+`setBoundVariable` takes a `Variable` object, never an ID string (that form
+is deprecated and throws under `dynamic-page`), and only for node fields
+like `width`, `itemSpacing`, `cornerRadius`, `paddingLeft`, etc. Fills are
+not a bindable node field. Bind a paint's color instead and assign the
+returned paint back:
+
+```ts
+const [paint] = frame.fills as SolidPaint[];
+if (variable && paint) {
+  frame.fills = [
+    figma.variables.setBoundVariableForPaint(paint, "color", variable),
+  ];
+}
+```
+
+The sync setter `node.fillStyleId = ...` is deprecated; use
+`setFillStyleIdAsync()` instead. Same for `strokeStyleId`, `effectStyleId`,
+`gridStyleId`, and `TextNode.textStyleId`: use their `set...StyleIdAsync()`
+counterparts.
 
 ## Notifications
 
 Ambient feedback. Cheap, non-blocking, the right way to confirm an action.
+Messages are capped at 100 characters (truncated beyond), with a 3000ms
+default timeout.
 
 ```ts
 figma.notify("Renamed 23 layers");
@@ -130,11 +151,25 @@ const handle = figma.notify("Working…", { timeout: Infinity });
 handle.cancel();
 ```
 
+Full options: `{ timeout, error, onDequeue, button: { text, action } }`.
+Returning `false` from `button.action` keeps the toast open.
+
 ## Undo grouping
 
-A user pressing Cmd-Z should undo the entire plugin action in one step, not
-node by node. Wrap multi-mutation handlers in try/finally and call
-`figma.commitUndo()`:
+`figma.commitUndo()` commits pending actions to undo history. It does not
+perform an undo itself, and by default plugin actions are not committed to
+undo history at all. Figma's own docs show it called between sequential
+mutations:
+
+```ts
+figma.createRectangle();
+figma.commitUndo();
+figma.createEllipse();
+```
+
+This boilerplate's convention (not a documented Figma pattern) is to wrap
+multi-mutation handlers in try/finally, so the checkpoint still lands if the
+loop throws partway through:
 
 ```ts
 try {
@@ -144,16 +179,22 @@ try {
 }
 ```
 
+`figma.triggerUndo()` reverts to the last `commitUndo()` checkpoint (in the
+typings, no live docs page). `figma.saveVersionHistoryAsync(title, desc?)`
+is unrelated: it writes to the file's version history panel, not Cmd-Z.
+
 ## Events
 
-Always remove listeners on close to avoid leaks across plugin invocations.
+`figma.on("close", ...)` runs teardown before the sandbox is destroyed,
+typically flushing state to `figma.clientStorage`. It is not about removing
+other listeners: each plugin invocation gets a fresh sandbox, so listeners
+never leak across invocations (this boilerplate's `selectionchange` listener
+in `src/main.ts` is intentionally never removed).
 
 ```ts
-const onSelChange = () => { /* ... */ };
-figma.on("selectionchange", onSelChange);
-
 figma.on("close", () => {
-  figma.off("selectionchange", onSelChange);
+  // Async work here is not guaranteed to finish before the sandbox exits.
+  // Prefer persisting state on change rather than batching it into close.
 });
 ```
 
